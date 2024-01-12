@@ -11,3 +11,4 @@ config.jsonc
 # Things we need to track
 !.git*
 !.npmignore
+.smol-dev-js
