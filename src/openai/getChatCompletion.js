@@ -93,6 +93,9 @@ async function getChatCompletion(
 	let respJson = null;
 	let respErr = null;
 
+	console.log("The request is ...", reqJson);
+
+
 	// Decide on how to handle streaming, or non streaming event
 	if(reqJson.stream != true) {
 
