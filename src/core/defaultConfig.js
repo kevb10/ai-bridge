@@ -90,7 +90,7 @@ module.exports = {
 
 		"completion": {
 			// Default model to use
-			"model": "gpt-3.5-turbo",
+			"model": "gpt-3.5-turbo-1106",
 
 			// // Total tokens computes the max_tokens
 			// // using the current prompt.
@@ -157,7 +157,7 @@ module.exports = {
 		},
 
 		"chat": {
-			"model": "gpt-3.5-turbo",
+			"model": "gpt-3.5-turbo-1106",
 			"temperature": 0,
 		
 			// "total_tokens": 4050,

@@ -89,83 +89,8 @@ class AiBridge {
 	 * @param {Number} tempKey to use, automatically generated if -1
 	 */
 	async getCompletion(prompt, promptOpts = {}, streamListener = null, cacheGrp = "default", tempKey = -1) {
-		// self ref
-		let self = this;
-
-		// Safety
-		if( streamListener == null ) {
-			streamListener = () => {};
-		}
-
-		// Merge the options with the default
-		let opt = Object.assign({}, this.config.default.completion, promptOpts);
-		opt.prompt = prompt;
-
-		// Parse the prompt, and compute its token count
-		let promptTokenCount = getTokenCount( prompt );
-		
-		// Parse the prompt, and compute its token count
-		opt = normalizeCompletionOptObject(opt, promptTokenCount);
-		let model = opt.model;
-
-		// Generate the temp key, in accordence to the tempreture setting
-		if( tempKey < 0 ) {
-			if( opt.temperature == 0 ) {
-				tempKey = 0;
-			}
-
-			let tempRange = parseFloat(opt.temperature) * parseFloat(this.config.temperatureKeyMultiplier);
-			if( Math.floor(tempRange) <= 0 ) {
-				tempKey = 0;
-			} else {
-				tempKey = Math.floor( Math.random() * tempRange );
-			}
-		}
-
-		// Get the completion from cache if possible
-		let cacheRes = await this.layerCache.getCacheCompletion(prompt, opt, cacheGrp, tempKey);
-		if (cacheRes != null) {
-			await streamListener(cacheRes);
-			return {
-				model: model,
-				completion: cacheRes,
-				token: {
-					prompt: promptTokenCount,
-					completion: getTokenCount(cacheRes),
-					cache: true
-				}
-			};
-		}
-		
-		// Fallback, get from the API, without caching
-		let completionRes = await this._pQueue.add(async function() {
-			let ret = null
-			if( model.startsWith("claude-") ) {
-				ret = await anthropic_getCompletion(self._anthropic_key, opt, streamListener);
-			} else {
-				ret = await openai_getCompletion(self._openai_key, opt, streamListener);
-			}
-	
-			// Thorttling controls
-			if(self.config.providerLatencyAdd > 0) {
-				await sleep(self.config.providerLatencyAdd);
-			}
-			return ret;
-		});
-
-		// Add to cache
-		await this.layerCache.addCacheCompletion(prompt, completionRes, opt, cacheGrp, tempKey);
-
-		// Return full completion
-		return {
-			model: model,
-			completion: completionRes,
-			token: {
-				prompt: promptTokenCount,
-				completion: getTokenCount(completionRes),
-				cache: false
-			}
-		};
+		console.warn("getCompletion is deprecated, use getChatCompletion instead")
+		return this.getChatCompletion(prompt, promptOpts, streamListener, cacheGrp, tempKey);
 	}
 
 	/**
@@ -344,28 +269,28 @@ function normalizeCompletionOptObject(opt, promptTokenCount, messagesArr) {
 		if( this._anthropic_key ) {
 			model = "claude-v1-100k";
 		} else {
-			model = "gpt-3.5-turbo";
+			model = "gpt-3.5-turbo-1106";
 		}
 	}
 
 	// Special handling for gpt-4e (economical)
 	if( model == "gpt-4e" ) {
 		// Check if the prompt is under 2025 tokens
-		if( promptTokenCount < 2025 ) {
+		if (promptTokenCount < 14000) {
 			// if so we use gpt-3.5 turbo instead
-			model = "gpt-3.5-turbo";
+			model = "gpt-3.5-turbo-1106";
 		} else {
 			// otherwise we use gpt-4
-			model = "gpt-4";
+			model = "gpt-4-1106-preview";
 		}
 	}
 	opt.model = model;
 
 	// Normalize "max_tokens" auto
 	if( opt.max_tokens == "auto" || opt.max_tokens == null ) {
-		let autoTotalTokens = 4050;
+		let autoTotalTokens = 16835; // 3.5 turbo preview
 		if( model.startsWith("gpt-4") ) {
-			autoTotalTokens = 8000;
+			autoTotalTokens = 128000;
 		} else if( model.startsWith("claude") && model.endsWith("100k") ) {
 			autoTotalTokens = 90000; // 100k - 10k to account for some token miscounts
 		}

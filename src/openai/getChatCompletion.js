@@ -6,10 +6,10 @@
 
 // Default config settings to use
 const defaultConfig = {
-	"model": "gpt-3.5-turbo",
+	"model": "gpt-3.5-turbo-1106",
 	"temperature": 0,
 
-	"total_tokens": 4050,
+	"total_tokens": 16385,
 	"max_tokens": null,
 
 	"top_p": 1,
@@ -19,9 +19,6 @@ const defaultConfig = {
 	// Important note!: we split the endoftext token very
 	// intentionally,to avoid causing issues when this file is parsed
 	// by GPT-3 based AI.
-
-	// // Default stop keyword
-	// "stop": ["<|"+"endoftext"+"|>"],
 
 	// Return as a string if false, 
 	// else return the raw openAI API response
@@ -74,7 +71,7 @@ async function getChatCompletion(
 
 	// Normalize "max_tokens" auto
 	if( reqJson.max_tokens == "auto" || reqJson.max_tokens == null ) {
-		let totalTokens = inConfig.total_tokens || 4080;
+		let totalTokens = inConfig.total_tokens || 16385;
 		let reqTokenCount = getTokensCount(reqJson.messages) + reqJson.messages.length * 2;
 		reqJson.max_tokens = totalTokens - reqTokenCount;
 		if( reqJson.max_tokens <= 50 ) {
