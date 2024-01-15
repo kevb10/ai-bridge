@@ -74,6 +74,17 @@ async function getCompletion(
 	if( reqJson.max_tokens == "auto" || reqJson.max_tokens == null ) {
 		let totalTokens = inConfig.total_tokens || 90 * 1000;
 		let promptTokenCount = getTokenCount( reqJson.prompt );
+
+		// If the prompt is too large, switch to "gpt-4-32k" model
+		const MODEL_SWITCH_THRESHOLD = 4000; // Adjust this value based on your requirements
+
+		// Check if the token count exceeds the threshold
+		if (promptTokenCount > MODEL_SWITCH_THRESHOLD) {
+			// Switch to "gpt-4-32k" model
+			reqJson.model = "gpt-4-32k";
+			totalTokens = 32000; // Update total tokens for "gpt-4-32k"
+		}
+
 		reqJson.max_tokens = totalTokens - promptTokenCount;
 		if( reqJson.max_tokens <= 50 ) {
 			throw `Prompt is larger or nearly equal to total token count (${promptTokenCount}/${totalTokens})`;
