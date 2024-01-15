@@ -4,6 +4,8 @@
  * This does not perform any caching / saving, and can be imported, or executed directly
  **/
 
+const getTokenCount = require("./getTokenCount");
+
 // Default config settings to use
 const defaultConfig = {
 	"model": "gpt-3.5-turbo-1106",
@@ -71,11 +73,22 @@ async function getChatCompletion(
 
 	// Normalize "max_tokens" auto
 	if( reqJson.max_tokens == "auto" || reqJson.max_tokens == null ) {
-		let totalTokens = inConfig.total_tokens || 16385;
-		let reqTokenCount = getTokensCount(reqJson.messages) + reqJson.messages.length * 2;
-		reqJson.max_tokens = totalTokens - reqTokenCount;
+		let totalTokens = inConfig.total_tokens || 90 * 1000;
+		let promptTokenCount = getTokenCount(reqJson.prompt);
+
+		// Define the threshold for switching the model
+		const MODEL_SWITCH_THRESHOLD = 4000; // Adjust this value based on your requirements
+
+		// Check if the token count exceeds the threshold
+		if (promptTokenCount > MODEL_SWITCH_THRESHOLD) {
+			// Switch to "gpt-4-32k" model
+			reqJson.model = "gpt-4-32k";
+			totalTokens = 32000; // Update total tokens for "gpt-4-32k"
+		}
+
+		reqJson.max_tokens = totalTokens - promptTokenCount;
 		if( reqJson.max_tokens <= 50 ) {
-			throw `Prompt is larger or nearly equal to total token count (${reqTokenCount}/${totalTokens})`;
+			throw `Prompt is larger or nearly equal to total token count (${promptTokenCount}/${totalTokens})`;
 		}
 	}
 
@@ -92,9 +105,6 @@ async function getChatCompletion(
 	// The return data to use
 	let respJson = null;
 	let respErr = null;
-
-	console.log("The request is ...", reqJson);
-
 
 	// Decide on how to handle streaming, or non streaming event
 	if(reqJson.stream != true) {
